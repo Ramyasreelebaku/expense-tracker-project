@@ -1,30 +1,34 @@
 import json
-import os
- 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
-DATA_FILE = os.path.join(DATA_DIR, "expenses.json")
- 
- 
-def ensure_data_file_exists() -> None:
+from pathlib import Path
+
+DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_FILE = DATA_DIR / "expenses.json"
+
+
+def _ensure_data_file() -> None:
     """Create data folder and empty JSON file if missing."""
-    os.makedirs(DATA_DIR, exist_ok=True)
- 
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
- 
- 
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    
+    if not DATA_FILE.exists():
+        DATA_FILE.write_text(json.dumps([]), encoding="utf-8")
+
+
 def load_expenses() -> list[dict]:
     """Load expenses list from JSON file."""
-    ensure_data_file_exists()
- 
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
- 
- 
+    _ensure_data_file()
+    
+    try:
+        return json.loads(DATA_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, FileNotFoundError):
+        print("Warning: Could not load expenses. Starting fresh.")
+        return []
+
+
 def save_expenses(expenses: list[dict]) -> None:
     """Save expenses list to JSON file."""
-    ensure_data_file_exists()
- 
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(expenses, f, indent=2)
+    _ensure_data_file()
+    
+    try:
+        DATA_FILE.write_text(json.dumps(expenses, indent=2), encoding="utf-8")
+    except IOError as e:
+        print(f"Error saving expenses: {e}")

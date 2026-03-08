@@ -1,43 +1,44 @@
 from datetime import date
 from tabulate import tabulate
+from collections import defaultdict
+ 
+ 
+def _validate_amount(amount_str: str) -> float | None:
+    """Validate and convert amount string to float."""
+    if not amount_str.strip():
+        print("Amount cannot be empty.")
+        return None
+    
+    try:
+        amount = float(amount_str)
+        if amount <= 0:
+            print("Amount must be greater than 0.")
+            return None
+        return amount
+    except ValueError:
+        print("Amount must be a number.")
+        return None
  
  
 def add_expense(expenses: list[dict]) -> None:
     """Ask user details and add a new expense dictionary into the list."""
-    print("\nAdd a new expense")
- 
-    amount_str = input("Amount (e.g., 120.50): ").strip()
-    category = input("Category (e.g., Food/Travel/Rent): ").strip()
-    description = input("Description (e.g., Uber Auto): ").strip()
- 
-    # Basic validation (beginner-friendly)
-    if not amount_str:
-        print("Amount cannot be empty.")
+    amount = _validate_amount(input("Amount: "))
+    if amount is None:
         return
- 
-    try:
-        amount = float(amount_str)
-    except ValueError:
-        print("Amount must be a number.")
-        return
- 
-    if amount <= 0:
-        print("Amount must be greater than 0.")
-        return
- 
+    
+    category = input("Category: ").strip()
     if not category:
         print("Category cannot be empty.")
         return
+    
+    description = input("Description: ").strip()
  
-    expense = {
+    expenses.append({
         "date": str(date.today()),
         "amount": amount,
         "category": category,
         "description": description
-    }
- 
-    expenses.append(expense)
-    print("Expense added successfully!")
+    })
  
  
 def list_expenses(expenses: list[dict]) -> None:
@@ -48,19 +49,13 @@ def list_expenses(expenses: list[dict]) -> None:
         print("No expenses found yet.")
         return
  
-    rows = []
-    for e in expenses:
-        rows.append([e["date"], e["amount"], e["category"], e["description"]])
- 
+    rows = [[e["date"], e["amount"], e["category"], e["description"]] for e in expenses]
     print(tabulate(rows, headers=["Date", "Amount", "Category", "Description"], tablefmt="grid"))
  
  
 def show_total(expenses: list[dict]) -> None:
     """Print total spending."""
-    total = 0.0
-    for e in expenses:
-        total += float(e["amount"])
- 
+    total = sum(float(e["amount"]) for e in expenses) if expenses else 0.0
     print(f"\nTotal spending: ₹{total:.2f}")
  
  
@@ -72,14 +67,9 @@ def show_category_summary(expenses: list[dict]) -> None:
         print("No expenses found yet.")
         return
  
-    summary = {}
-    for e in expenses:
-        cat = e["category"]
-        amt = float(e["amount"])
-        summary[cat] = summary.get(cat, 0.0) + amt
+    summary = defaultdict(float)
+    for expense in expenses:
+        summary[expense["category"]] += float(expense["amount"])
  
-    rows = []
-    for cat, amt in summary.items():
-        rows.append([cat, f"₹{amt:.2f}"])
- 
+    rows = [[cat, f"₹{amt:.2f}"] for cat, amt in sorted(summary.items())]
     print(tabulate(rows, headers=["Category", "Total"], tablefmt="grid"))
